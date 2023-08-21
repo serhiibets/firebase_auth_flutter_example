@@ -1,21 +1,24 @@
-import 'package:email_validator/email_validator.dart';
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_project/main.dart';
 import 'package:firebase_auth_project/utils/utils.dart';
+import 'package:firebase_auth_project/widgets/cupertino_widgets.dart';
+import 'package:firebase_auth_project/widgets/material_widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-class SignUpWidget extends StatefulWidget {
+class SignUpPage extends StatefulWidget {
   final Function() onClickedSignIn;
 
-  const SignUpWidget({super.key, required this.onClickedSignIn});
+  const SignUpPage({super.key, required this.onClickedSignIn});
 
   @override
-  State<SignUpWidget> createState() => _SignUpPageState();
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _SignUpPageState extends State<SignUpWidget> {
+class _SignUpPageState extends State<SignUpPage> {
   final formKey = GlobalKey<FormState>();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
@@ -29,83 +32,13 @@ class _SignUpPageState extends State<SignUpWidget> {
   }
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: formKey,
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const SizedBox(height: 60),
-            const FlutterLogo(size: 120),
-            const SizedBox(height: 20),
-            const Text(
-              'Hey There, \n Welcome to the App!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 40),
-            TextFormField(
-              controller: emailController,
-              cursorColor: Colors.black,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(labelText: 'Email'),
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              validator: (email) =>
-                  email != null && !EmailValidator.validate(email)
-                      ? 'Enter a valid email'
-                      : null,
-            ),
-            const SizedBox(height: 4),
-            TextFormField(
-              controller: passwordController,
-              cursorColor: Colors.black,
-              textInputAction: TextInputAction.next,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              validator: (value) => (value) != null && (value.length < 8)
-                  ? 'Enter min 8 characters'
-                  : null,
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: confirmPasswordController,
-              cursorColor: Colors.black,
-              textInputAction: TextInputAction.next,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Confirm Password'),
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              validator: (value) => (value) != null &&
-                      (value.length < 8) &&
-                      (value != passwordController.text)
-                  ? 'Passwords missmatch!'
-                  : null,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50)),
-                icon: const Icon(Icons.lock_open, size: 32),
-                label: const Text('Sign Up', style: TextStyle(fontSize: 24)),
-                onPressed: signUp),
-            const SizedBox(height: 24),
-            RichText(
-                text: TextSpan(
-                    text: 'Already have an account? ',
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.secondary,
-                        fontSize: 24),
-                    children: [
-                  TextSpan(
-                      recognizer: TapGestureRecognizer()
-                        ..onTap = widget.onClickedSignIn,
-                      text: 'Log In',
-                      style: TextStyle(
-                          decoration: TextDecoration.underline,
-                          color: Theme.of(context).colorScheme.secondary))
-                ]))
-          ]),
-        ),
-      );
+  Widget build(BuildContext context) {
+    if (Platform.isIOS) {
+      return _buildCupertinoSignUpPage();
+    } else {
+      return _buildMaterialSignUpPage();
+    }
+  }
 
   Future signUp() async {
     final isValid = formKey.currentState!.validate();
@@ -129,5 +62,85 @@ class _SignUpPageState extends State<SignUpWidget> {
     }
 
     navigatorKey.currentState!.popUntil((route) => route.isFirst);
+  }
+
+  Widget _buildCupertinoSignUpPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: formKey,
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const SizedBox(height: 60),
+          const FlutterLogo(size: 120),
+          const SizedBox(height: 20),
+          cupertinoText('Hey There, \n Welcome to the App!'),
+          const SizedBox(height: 40),
+          cupertinoEmailTextFormField(context, emailController),
+          const SizedBox(height: 4),
+          cupertinoPasswordTextFormField(context, passwordController),
+          const SizedBox(height: 4),
+          cupertinoConfirmPasswordTextFormField(
+              context, confirmPasswordController),
+          const SizedBox(height: 20),
+          cupertinoButton(() => signUp(), 'Sign Up'),
+          const SizedBox(height: 20),
+          RichText(
+              text: TextSpan(
+                  text: 'Already have an account? ',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.secondary,
+                      fontSize: 24),
+                  children: [
+                TextSpan(
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = widget.onClickedSignIn,
+                    text: 'Log In',
+                    style: TextStyle(
+                        decoration: TextDecoration.underline,
+                        color: Theme.of(context).colorScheme.secondary))
+              ]))
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildMaterialSignUpPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: formKey,
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const SizedBox(height: 60),
+          const FlutterLogo(size: 100),
+          const SizedBox(height: 20),
+          materialText('Hey There, \n Welcome to the App!'),
+          const SizedBox(height: 20),
+          materialEmailTextFormField(context, emailController),
+          const SizedBox(height: 4),
+          materialPasswordTextFormField(context, passwordController),
+          const SizedBox(height: 4),
+          materialConfirmPasswordTextFormField(
+              context, confirmPasswordController, passwordController),
+          const SizedBox(height: 20),
+          materialElevatedButton(() => signUp(), 'Sign Up', Icons.lock_open),
+          const SizedBox(height: 20),
+          RichText(
+              text: TextSpan(
+                  text: 'Already have an account? ',
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.secondary,
+                      fontSize: 24),
+                  children: [
+                TextSpan(
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = widget.onClickedSignIn,
+                    text: 'Log In',
+                    style: TextStyle(
+                        decoration: TextDecoration.underline,
+                        color: Theme.of(context).colorScheme.secondary))
+              ]))
+        ]),
+      ),
+    );
   }
 }

@@ -1,6 +1,11 @@
-import 'package:email_validator/email_validator.dart';
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_project/utils/utils.dart';
+import 'package:firebase_auth_project/widgets/cupertino_widgets.dart';
+import 'package:firebase_auth_project/widgets/material_widgets.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -23,6 +28,41 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (Platform.isIOS) {
+      return _buildCupertinoForgotPasswordPage();
+    } else {
+      return _buildMaterialForgotPasswordPage();
+    }
+  }
+
+  Widget _buildCupertinoForgotPasswordPage() {
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Reset password'),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 20),
+              const FlutterLogo(size: 120),
+              const SizedBox(height: 20),
+              cupertinoText('Enter an email to \n reset your password'),
+              const SizedBox(height: 20),
+              cupertinoEmailTextFormField(context, emailController),
+              const SizedBox(height: 20),
+              cupertinoButton(resetPassword, 'Reset password'),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMaterialForgotPasswordPage() {
     return Scaffold(
       appBar: AppBar(
           backgroundColor: Colors.transparent,
@@ -35,33 +75,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               const FlutterLogo(size: 120),
               const SizedBox(height: 20),
-              const Text(
-                'Enter an email to \n reset your password',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 24),
-              ),
+              materialText('Enter an email to \n reset your password'),
               const SizedBox(height: 20),
-              TextFormField(
-                  controller: emailController,
-                  cursorColor: Colors.black,
-                  textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  validator: (email) =>
-                      email != null && !EmailValidator.validate(email)
-                          ? 'Enter a valid email'
-                          : null),
+              materialEmailTextFormField(context, emailController),
               const SizedBox(height: 20),
-              ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(50)),
-                  icon: const Icon(Icons.email_outlined, size: 32),
-                  label: const Text('Reset password',
-                      style: TextStyle(fontSize: 24)),
-                  onPressed: resetPassword),
+              materialElevatedButton(
+                  resetPassword, 'Reset password', Icons.email_outlined),
             ],
           ),
         ),
@@ -70,18 +92,57 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   Future resetPassword() async {
-    showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()));
-    try {
-      await FirebaseAuth.instance
-          .sendPasswordResetEmail(email: emailController.text.trim());
-      Utils.showSnackBar('Password reset email sent!');
-      Navigator.of(context).popUntil((route) => route.isFirst);
-    } on FirebaseAuthException catch (error) {
-      if (kDebugMode) {
-        print(error);
+    if (Platform.isIOS) {
+      try {
+        await FirebaseAuth.instance
+            .sendPasswordResetEmail(email: emailController.text.trim());
+        showCupertinoModalPopup<void>(
+            context: context,
+            builder: (BuildContext context) => CupertinoAlertDialog(
+                    title: const Text("Info",
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    content: const Text('Password reset email sent!',
+                        style: TextStyle(fontSize: 16)),
+                    actions: <CupertinoDialogAction>[
+                      CupertinoDialogAction(
+                          isDefaultAction: true,
+                          onPressed: () => Navigator.of(context)
+                              .popUntil((route) => route.isFirst),
+                          child:
+                              const Text('Ok', style: TextStyle(fontSize: 20)))
+                    ]));
+      } on FirebaseAuthException catch (error) {
+        showCupertinoModalPopup<void>(
+            context: context,
+            builder: (BuildContext context) => CupertinoAlertDialog(
+                    title: const Text("Error!", style: TextStyle(fontSize: 20)),
+                    content: Text(error.toString(),
+                        style: const TextStyle(fontSize: 16)),
+                    actions: <CupertinoDialogAction>[
+                      CupertinoDialogAction(
+                          isDefaultAction: true,
+                          onPressed: () => Navigator.pop(context),
+                          child:
+                              const Text('Ok', style: TextStyle(fontSize: 16)))
+                    ]));
+      }
+    } else {
+      showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return const Center(child: CircularProgressIndicator());
+          });
+      try {
+        await FirebaseAuth.instance
+            .sendPasswordResetEmail(email: emailController.text.trim());
+        Utils.showSnackBar('Password reset email sent!');
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      } on FirebaseAuthException catch (error) {
+        if (kDebugMode) {
+          print(error);
+        }
         Utils.showSnackBar(error.message);
         Navigator.of(context).pop();
       }
